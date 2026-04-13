@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { Pill } from "../ui";
-import { Deadline } from "../../lib/mockData";
+import type { Deadline } from "../../lib/types";
 import { useTheme, tokens } from "../../lib/theme";
 
 type Props = {

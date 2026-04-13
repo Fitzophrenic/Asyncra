@@ -10,6 +10,7 @@ import { LayoutDashboard, BarChart3, Bell, User, Sun, Moon } from "lucide-react-
 import type { LucideIcon } from "lucide-react-native";
 
 import { useTheme, useSidebar } from "../../lib/theme";
+import { useAuth } from "../../lib/auth";
 import Logo from "../ui/Logo";
 
 type Item = { name: string; label: string; Icon: LucideIcon };
@@ -31,6 +32,7 @@ const ACCENT = "#6EC4DE";
 export default function Sidebar() {
   const mode = useTheme((s) => s.mode);
   const toggle = useTheme((s) => s.toggle);
+  const user = useAuth((s) => s.user);
   const nav = useNavigation<any>();
   const [hovered, setHovered] = useState(false);
 
@@ -186,19 +188,19 @@ export default function Sidebar() {
                 width: 40,
                 height: 40,
                 borderRadius: 20,
-                backgroundColor: ACCENT,
+                backgroundColor: user?.avatarColor || ACCENT,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 14 }}>JD</Text>
+              <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 14 }}>{user?.initials ?? "?"}</Text>
             </View>
             <Animated.View style={[labelStyle, { marginLeft: 12, flex: 1 }]}>
               <Text
                 numberOfLines={1}
                 style={{ fontSize: 14, fontWeight: "600", color: WHITE }}
               >
-                John Doe
+                {user?.name ?? "Student"}
               </Text>
               <Text
                 numberOfLines={1}

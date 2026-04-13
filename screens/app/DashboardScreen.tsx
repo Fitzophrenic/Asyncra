@@ -3,7 +3,6 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Calendar, Plus, Clock, BookOpen, Timer, Calculator, BarChart3 } from "lucide-react-native";
-import { mockDashboard, mockCourses, mockDeadlines } from "../../lib/mockData";
 import type { Course } from "../../lib/types";
 import { useAuth } from "../../lib/auth";
 import { useAppStore } from "../../lib/store";

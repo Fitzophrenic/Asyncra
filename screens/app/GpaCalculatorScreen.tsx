@@ -4,7 +4,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { RootStackParamList } from "../../navigation/RootNavigator";
-import { mockCourses } from "../../lib/mockData";
+import { useAppStore } from "../../lib/store";
 import { useTheme, tokens } from "../../lib/theme";
 import { useIsWide } from "../../components/layout/AppShell";
 
@@ -60,9 +60,10 @@ export default function GpaCalculatorScreen({ navigation }: Props) {
   const t = tokens[mode];
   const isWide = useIsWide();
   const focusKey = useFocusKey();
+  const courses = useAppStore((s) => s.courses);
 
   const [grades, setGrades] = useState<Record<string, string>>(
-    Object.fromEntries(mockCourses.map((c) => [c.id, "B+"]))
+    Object.fromEntries(courses.map((c) => [c.id, "B+"]))
   );
 
   const setGrade = (courseId: string, grade: string) => {
@@ -72,7 +73,7 @@ export default function GpaCalculatorScreen({ navigation }: Props) {
   // Calculate GPA
   let totalPoints = 0;
   let totalCredits = 0;
-  mockCourses.forEach((c) => {
+  courses.forEach((c) => {
     const grade = grades[c.id];
     if (grade && GRADE_POINTS[grade] !== undefined) {
       totalPoints += GRADE_POINTS[grade] * c.credits;
@@ -102,7 +103,7 @@ export default function GpaCalculatorScreen({ navigation }: Props) {
 
         {/* Course grades */}
         <View style={isWide ? { flexDirection: "row", flexWrap: "wrap", gap: 16 } : {}}>
-          {mockCourses.map((c, i) => (
+          {courses.map((c, i) => (
             <Appear from="down" delay={150 + i * 100} duration={500} key={`${c.id}-${focusKey}`} style={isWide ? { width: "48%" } : { marginBottom: 12 }}>
               <Card elevated>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>

@@ -3,7 +3,8 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AlertCircle, AlertTriangle, Info, X } from "lucide-react-native";
 
-import { mockNotifications, Notification } from "../../lib/mockData";
+import type { Notification } from "../../lib/types";
+import { useAppStore } from "../../lib/store";
 import { useTheme, tokens } from "../../lib/theme";
 
 import HeaderBand from "../../components/ui/HeaderBand";
@@ -69,9 +70,11 @@ export default function NotificationsScreen() {
   const [email, setEmail] = useState(true);
   const [push, setPush] = useState(true);
   const [reminders, setReminders] = useState(true);
-  const [items, setItems] = useState(mockNotifications);
+  const notifications = useAppStore((s) => s.notifications);
+  const dismissNotification = useAppStore((s) => s.dismissNotification);
+  const items = notifications;
 
-  const dismiss = (id: string) => setItems((xs) => xs.filter((n) => n.id !== id));
+  const dismiss = (id: string) => dismissNotification(id);
 
   return (
     <SafeAreaView className={`flex-1 ${t.bg}`} edges={["bottom"]}>

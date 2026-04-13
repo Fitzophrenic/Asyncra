@@ -5,7 +5,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Check } from "lucide-react-native";
 
 import { RootStackParamList } from "../../navigation/RootNavigator";
-import { mockCourses, Course } from "../../lib/mockData";
+import type { Course } from "../../lib/types";
+import { useAppStore } from "../../lib/store";
 import { useTheme, tokens } from "../../lib/theme";
 import { useIsWide } from "../../components/layout/AppShell";
 
@@ -94,6 +95,7 @@ export default function CourseCompareScreen({ navigation }: Props) {
   const t = tokens[mode];
   const isWide = useIsWide();
   const focusKey = useFocusKey();
+  const courses = useAppStore((s) => s.courses);
   const [selected, setSelected] = useState<string[]>([]);
 
   const toggleCourse = (id: string) => {
@@ -104,7 +106,7 @@ export default function CourseCompareScreen({ navigation }: Props) {
     });
   };
 
-  const selectedCourses = mockCourses.filter((c) => selected.includes(c.id));
+  const selectedCourses = courses.filter((c) => selected.includes(c.id));
 
   return (
     <SafeAreaView className={`flex-1 ${t.bg}`} edges={["bottom"]}>
@@ -121,7 +123,7 @@ export default function CourseCompareScreen({ navigation }: Props) {
         {/* Course selector */}
         <Appear from="down" delay={50} duration={400} key={`sel-${focusKey}`}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
-            {mockCourses.map((c) => {
+            {courses.map((c) => {
               const active = selected.includes(c.id);
               return (
                 <Pressable

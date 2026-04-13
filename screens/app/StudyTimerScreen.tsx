@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Pause, Play, RotateCcw, Coffee, Flame, Clock, BookOpen, Trash2, SkipForward } from "lucide-react-native";
 
 import { RootStackParamList } from "../../navigation/RootNavigator";
-import { mockCourses } from "../../lib/mockData";
+import { useAppStore } from "../../lib/store";
 import { useTheme, tokens } from "../../lib/theme";
 import { useIsWide } from "../../components/layout/AppShell";
 
@@ -42,8 +42,9 @@ export default function StudyTimerScreen({ navigation }: Props) {
   const isWide = useIsWide();
   const focusKey = useFocusKey();
   const isDark = mode === "dark";
+  const courses = useAppStore((s) => s.courses);
 
-  const [selectedCourse, setSelectedCourse] = useState(mockCourses[0].id);
+  const [selectedCourse, setSelectedCourse] = useState(courses[0]?.id ?? "");
   const [isBreak, setIsBreak] = useState(false);
   const [timeLeft, setTimeLeft] = useState(WORK_MINS * 60);
   const [running, setRunning] = useState(false);
@@ -53,11 +54,11 @@ export default function StudyTimerScreen({ navigation }: Props) {
 
   const totalSeconds = isBreak ? BREAK_MINS * 60 : WORK_MINS * 60;
   const progress = (totalSeconds - timeLeft) / totalSeconds;
-  const course = mockCourses.find((c) => c.id === selectedCourse) || mockCourses[0];
+  const course = courses.find((c) => c.id === selectedCourse) || courses[0];
   const accentColor = isBreak ? "#3FBF7F" : "#5DBFD6";
 
   const totalMinutes = log.reduce((sum, e) => sum + e.duration, 0);
-  const courseLogs = mockCourses.map((c) => ({
+  const courseLogs = courses.map((c) => ({
     code: c.code,
     minutes: log.filter((e) => e.courseCode === c.code).reduce((s, e) => s + e.duration, 0),
   }));
@@ -131,7 +132,7 @@ export default function StudyTimerScreen({ navigation }: Props) {
     <View style={{ alignItems: "center", flex: isWide ? undefined : undefined }}>
       {/* Course selector */}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 28, justifyContent: "center" }}>
-        {mockCourses.map((c) => {
+        {courses.map((c) => {
           const active = selectedCourse === c.id;
           return (
             <Pressable

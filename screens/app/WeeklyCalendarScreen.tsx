@@ -4,7 +4,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { RootStackParamList } from "../../navigation/RootNavigator";
-import { mockCourses } from "../../lib/mockData";
+import { useAppStore } from "../../lib/store";
 import { useTheme, tokens } from "../../lib/theme";
 import { useIsWide } from "../../components/layout/AppShell";
 
@@ -39,16 +39,18 @@ const schedule: Record<string, TimeBlock[]> = {
   ],
 };
 
-// Upcoming deadlines this week
-const weekDeadlines = mockCourses.flatMap((c) =>
-  c.deadlines.slice(0, 2).map((d) => ({ ...d, courseTitle: c.title, color: c.id === "c1" ? "#1B3A6B" : c.id === "c2" ? "#E0A23A" : "#3FBF7F" }))
-).slice(0, 4);
+const DEADLINE_COLORS = ["#1B3A6B", "#E0A23A", "#3FBF7F", "#8B5CF6", "#E25C5C"];
 
 export default function WeeklyCalendarScreen({ navigation }: Props) {
   const mode = useTheme((s) => s.mode);
   const t = tokens[mode];
   const isWide = useIsWide();
   const focusKey = useFocusKey();
+  const courses = useAppStore((s) => s.courses);
+
+  const weekDeadlines = courses.flatMap((c, ci) =>
+    c.deadlines.slice(0, 2).map((d) => ({ ...d, courseTitle: c.title, color: DEADLINE_COLORS[ci % DEADLINE_COLORS.length] }))
+  ).slice(0, 4);
 
   return (
     <SafeAreaView className={`flex-1 ${t.bg}`} edges={["bottom"]}>

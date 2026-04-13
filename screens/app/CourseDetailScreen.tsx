@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Calendar, ChevronDown, ChevronUp, Clock } from "lucide-react-native";
 
 import { RootStackParamList } from "../../navigation/RootNavigator";
-import { mockCourses } from "../../lib/mockData";
+import { useAppStore } from "../../lib/store";
 import { useTheme, tokens } from "../../lib/theme";
 import { useIsWide } from "../../components/layout/AppShell";
 
@@ -25,7 +25,8 @@ export default function CourseDetailScreen({ route, navigation }: Props) {
   const t = tokens[mode];
   const isWide = useIsWide();
   const courseId = route.params?.courseId;
-  const course = mockCourses.find((c) => c.id === courseId) ?? mockCourses[0];
+  const courses = useAppStore((s) => s.courses);
+  const course = courses.find((c) => c.id === courseId) ?? courses[0];
   const focusKey = useFocusKey();
 
   const [descOpen, setDescOpen] = useState(true);

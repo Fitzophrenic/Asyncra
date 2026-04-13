@@ -7,13 +7,14 @@ import { RootStackParamList } from "../../navigation/RootNavigator";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
 import { Appear } from "../../components/ui/Appear";
 import { ProgressBar } from "../../components/ui/ProgressBar";
-import { mockCourses } from "../../lib/mockData";
+import { useAppStore } from "../../lib/store";
 import { useIsWide } from "../../components/layout/AppShell";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Preview">;
 
 export default function PreviewScreen({ navigation }: Props) {
-  const course = mockCourses[0];
+  const courses = useAppStore((s) => s.courses);
+  const course = courses[0];
   const isWide = useIsWide();
 
   const courseCard = (

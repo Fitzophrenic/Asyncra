@@ -1,14 +1,14 @@
 import { View, Text } from "react-native";
 import { AlertTriangle, Clock } from "lucide-react-native";
 import { useTheme, tokens } from "../../lib/theme";
-import { mockDeadlines } from "../../lib/mockData";
+import { useAppStore } from "../../lib/store";
 
 export default function TodayFocus() {
   const mode = useTheme((s) => s.mode);
   const t = tokens[mode];
+  const deadlines = useAppStore((s) => s.deadlines);
 
-  // Find most urgent deadline
-  const urgent = [...mockDeadlines].sort((a, b) => a.daysLeft - b.daysLeft)[0];
+  const urgent = [...deadlines].sort((a, b) => a.daysLeft - b.daysLeft)[0];
   if (!urgent) return null;
 
   const urgencyColor = urgent.daysLeft <= 1 ? "#E25C5C" : urgent.daysLeft <= 3 ? "#E0A23A" : "#5DBFD6";

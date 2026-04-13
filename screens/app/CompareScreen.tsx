@@ -3,7 +3,8 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react-native";
 
-import { mockComparisons, ProgramComparison } from "../../lib/mockData";
+import type { ProgramComparison } from "../../lib/types";
+import { useAppStore } from "../../lib/store";
 import { useTheme, tokens } from "../../lib/theme";
 
 import HeaderBand from "../../components/ui/HeaderBand";
@@ -103,15 +104,16 @@ export default function CompareScreen() {
   const [search, setSearch] = useState("");
   const [index, setIndex] = useState(0);
   const focusKey = useFocusKey();
+  const comparisons = useAppStore((s) => s.comparisons);
 
   const q = search.trim().toLowerCase();
   const filtered = q
-    ? mockComparisons.filter(
-        (p) =>
+    ? comparisons.filter(
+        (p: ProgramComparison) =>
           p.institution.toLowerCase().includes(q) ||
           p.degree.toLowerCase().includes(q),
       )
-    : mockComparisons;
+    : comparisons;
 
   const safeIndex = Math.min(index, Math.max(0, filtered.length - 1));
   const current = filtered[safeIndex];
