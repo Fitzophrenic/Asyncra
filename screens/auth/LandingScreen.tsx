@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TextInput, KeyboardAvoidingView, Platform, Dimensions, FlatList } from "react-native";
+import { View, Text, ScrollView, TextInput, KeyboardAvoidingView, Platform, Dimensions, FlatList, Pressable } from "react-native";
 import type { NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -214,6 +214,11 @@ export default function LandingScreen({ navigation }: Props) {
             <Text className="text-center text-slate-400 text-xs mt-4 tracking-wider">
               NO ACCOUNT REQUIRED TO GET STARTED
             </Text>
+            <Pressable onPress={() => navigation.navigate("SignIn")} style={{ marginTop: 12, alignItems: "center" }}>
+              <Text style={{ fontSize: 13, color: "#64748B" }}>
+                Already have an account? <Text style={{ color: "#5DBFD6", fontWeight: "600" }}>Sign In</Text>
+              </Text>
+            </Pressable>
           </Card>
         </Appear>
       </View>

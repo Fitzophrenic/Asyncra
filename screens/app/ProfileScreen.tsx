@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronDown, ChevronUp, LogOut, Save, Sun, Moon, Bell, Shield } from "lucide-react-native";
 import { useNavigation, CommonActions } from "@react-navigation/native";
@@ -171,7 +171,11 @@ export default function ProfileScreen() {
       <View style={{ flexDirection: "row", gap: 12 }}>
         <Pressable
           onPress={() => {
-            updateUser({ name, email, major, enrollment, goal, weeklyHours: Number(hours) || 20, avatarColor });
+            const parts = name.trim().split(" ");
+            const initials = parts.length >= 2
+              ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+              : name.trim().slice(0, 2).toUpperCase();
+            updateUser({ name: name.trim(), email, major, enrollment, goal, weeklyHours: Number(hours) || 20, avatarColor, initials });
             // TODO: call userApi.updateProfile() when backend is ready
           }}
           style={{
@@ -184,10 +188,20 @@ export default function ProfileScreen() {
         </Pressable>
         <Pressable
           onPress={() => {
-            signOut();
-            navigation.dispatch(
-              CommonActions.reset({ index: 0, routes: [{ name: "Welcome" }] })
-            );
+            const doSignOut = () => {
+              signOut();
+              navigation.dispatch(
+                CommonActions.reset({ index: 0, routes: [{ name: "Welcome" }] })
+              );
+            };
+            if (Platform.OS === "web") {
+              if (window.confirm("Are you sure you want to sign out?")) doSignOut();
+            } else {
+              Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Sign Out", style: "destructive", onPress: doSignOut },
+              ]);
+            }
           }}
           style={{
             flex: 1, borderWidth: 1.5, borderColor: "#E25C5C", borderRadius: 14, paddingVertical: 14,

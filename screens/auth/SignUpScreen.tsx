@@ -13,8 +13,10 @@ import { useAuth } from "../../lib/auth";
 type Props = NativeStackScreenProps<RootStackParamList, "SignUp">;
 
 export default function SignUpScreen({ navigation }: Props) {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
@@ -34,6 +36,12 @@ export default function SignUpScreen({ navigation }: Props) {
 
   const handleSignUp = () => {
     let valid = true;
+    if (name.trim().length < 2) {
+      setNameError("Please enter your name");
+      valid = false;
+    } else {
+      setNameError("");
+    }
     if (!email.includes("@")) {
       setEmailError("Please enter a valid email address");
       valid = false;
@@ -47,7 +55,7 @@ export default function SignUpScreen({ navigation }: Props) {
       setPasswordError("");
     }
     if (valid) {
-      signUp(email, password).then(() => {
+      signUp(email, password, name.trim()).then(() => {
         setShowConfetti(true);
         setTimeout(() => {
           navigation.navigate("AppTabs", { screen: "Dashboard" });
@@ -82,6 +90,24 @@ export default function SignUpScreen({ navigation }: Props) {
           </Text>
 
           <View style={{ marginTop: 28 }}>
+            <Text
+              className="font-semibold uppercase mb-2"
+              style={{ color: "#13345F", fontSize: 11, letterSpacing: 1 }}
+            >
+              Full Name
+            </Text>
+            <TextInput
+              value={name}
+              onChangeText={(v) => { setName(v); if (nameError) setNameError(""); }}
+              placeholder="John Doe"
+              placeholderTextColor="#94A3B8"
+              autoCapitalize="words"
+              style={[inputBase, nameError ? { borderColor: "#E25C5C" } : {}]}
+            />
+            {nameError ? <Text style={{ color: "#E25C5C", fontSize: 12, marginTop: 4 }}>{nameError}</Text> : null}
+          </View>
+
+          <View style={{ marginTop: 18 }}>
             <Text
               className="font-semibold uppercase mb-2"
               style={{ color: "#13345F", fontSize: 11, letterSpacing: 1 }}
@@ -123,20 +149,16 @@ export default function SignUpScreen({ navigation }: Props) {
             {passwordError ? <Text style={{ color: "#E25C5C", fontSize: 12, marginTop: 4 }}>{passwordError}</Text> : null}
           </View>
 
-          <View style={{ marginTop: 28 }}>
-            <PrimaryButton title="Create Account" onPress={handleSignUp} disabled={showConfetti} />
+          <Text style={{ fontSize: 11, color: "#94A3B8", textAlign: "center", marginTop: 20, lineHeight: 16 }}>
+            By signing up you agree to our{" "}
+            <Text style={{ color: "#5DBFD6" }}>Terms of Service</Text> and{" "}
+            <Text style={{ color: "#5DBFD6" }}>Privacy Policy</Text>
+          </Text>
+
+          <View style={{ marginTop: 16 }}>
+            <PrimaryButton title={showConfetti ? "Setting up..." : "Create Account"} onPress={handleSignUp} disabled={showConfetti} />
           </View>
 
-          <View className="flex-row justify-center mt-5">
-            <Text className="text-sm" style={{ color: "#64748B" }}>
-              Already have an account?{" "}
-            </Text>
-            <Pressable onPress={() => navigation.navigate("SignIn")}>
-              <Text className="text-sm font-semibold" style={{ color: "#5DBFD6" }}>
-                Sign In
-              </Text>
-            </Pressable>
-          </View>
         </Appear>
       </ScrollView>
 

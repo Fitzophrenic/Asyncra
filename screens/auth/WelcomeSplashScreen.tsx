@@ -118,6 +118,11 @@ function MobileSplash({ navigation }: Props) {
             <Text style={{ fontSize: 14, color: "#94A3B8" }}>Skip</Text>
           </Pressable>
         )}
+        <Pressable onPress={() => navigation.navigate("SignIn")} style={{ marginTop: 20, alignItems: "center" }}>
+          <Text style={{ fontSize: 14, color: "#64748B" }}>
+            Already have an account? <Text style={{ color: "#5DBFD6", fontWeight: "600" }}>Sign In</Text>
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -160,6 +165,11 @@ function WebSplash({ navigation }: Props) {
         >
           <Text style={{ fontSize: 16, fontWeight: "700", color: "#FFFFFF" }}>Get Started Free</Text>
           <ArrowRight size={18} color="#FFFFFF" />
+        </Pressable>
+        <Pressable onPress={() => navigation.navigate("SignIn")} style={{ marginTop: 20 }}>
+          <Text style={{ fontSize: 14, color: "rgba(255,255,255,0.6)" }}>
+            Already have an account? <Text style={{ color: "#B7E2EC", fontWeight: "600" }}>Sign In</Text>
+          </Text>
         </Pressable>
       </View>
 

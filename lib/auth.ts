@@ -15,7 +15,7 @@ type AuthState = {
   onboardingData: OnboardingData | null;
   setOnboardingData: (data: Partial<OnboardingData>) => void;
 
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
   updateUser: (data: Partial<User>) => void;
@@ -34,22 +34,24 @@ export const useAuth = create<AuthState>((set, get) => ({
       onboardingData: { ...s.onboardingData, ...data } as OnboardingData,
     })),
 
-  signUp: async (email, password) => {
+  signUp: async (email, password, name) => {
     set({ isLoading: true });
     try {
       // TODO: replace with real api call
       // const { user, token } = await authApi.register(email, password, name);
 
-      // mock signup - uses onboarding data to build user
+      // mock signup - uses onboarding data + provided name
       const onboarding = get().onboardingData;
-      const namePart = email.split("@")[0];
-      const name = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+      const parts = name.split(" ");
+      const initials = parts.length >= 2
+        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+        : name.slice(0, 2).toUpperCase();
       const user: User = {
         ...mockUser,
         id: `u_${Date.now()}`,
         email,
         name,
-        initials: name.slice(0, 2).toUpperCase(),
+        initials,
         major: onboarding?.major ?? "Undeclared",
         enrollment: onboarding?.enrollment ?? "full-time",
         goal: onboarding?.goal ?? "",

@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, TextInput } from "react-native";
+import { View, Text, Pressable, ScrollView, TextInput, Alert, Platform } from "react-native";
 import { useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Lock } from "lucide-react-native";
@@ -16,6 +16,7 @@ export default function SignInScreen({ navigation }: Props) {
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [loading, setLoading] = useState(false);
   const signIn = useAuth((s) => s.signIn);
 
   const inputBase = {
@@ -45,9 +46,10 @@ export default function SignInScreen({ navigation }: Props) {
       setPasswordError("");
     }
     if (valid) {
+      setLoading(true);
       signIn(email, password).then(() => {
         navigation.navigate("AppTabs", { screen: "Dashboard" });
-      });
+      }).finally(() => setLoading(false));
     }
   };
 
@@ -118,20 +120,28 @@ export default function SignInScreen({ navigation }: Props) {
             {passwordError ? <Text style={{ color: "#E25C5C", fontSize: 12, marginTop: 4 }}>{passwordError}</Text> : null}
           </View>
 
-          <View style={{ marginTop: 28 }}>
-            <PrimaryButton title="Sign In" onPress={handleSignIn} />
+          <Pressable
+            onPress={() => {
+              if (Platform.OS === "web") {
+                window.alert("Password reset link sent! Check your email.");
+              } else {
+                Alert.alert("Reset Password", "Password reset link sent! Check your email.");
+              }
+            }}
+            style={{ alignSelf: "flex-end", marginTop: 12 }}
+          >
+            <Text style={{ fontSize: 13, color: "#5DBFD6", fontWeight: "500" }}>Forgot password?</Text>
+          </Pressable>
+
+          <View style={{ marginTop: 20 }}>
+            <PrimaryButton title={loading ? "Signing in..." : "Sign In"} onPress={handleSignIn} disabled={loading} />
           </View>
 
-          <View className="flex-row justify-center mt-5">
-            <Text className="text-sm" style={{ color: "#64748B" }}>
-              Don't have an account?{" "}
+          <Pressable onPress={() => navigation.goBack()} style={{ alignItems: "center", marginTop: 20 }}>
+            <Text style={{ fontSize: 14, color: "#5DBFD6", fontWeight: "600" }}>
+              Go Back
             </Text>
-            <Pressable onPress={() => navigation.navigate("SignUp")}>
-              <Text className="text-sm font-semibold" style={{ color: "#5DBFD6" }}>
-                Sign Up
-              </Text>
-            </Pressable>
-          </View>
+          </Pressable>
         </Appear>
       </ScrollView>
     </View>
