@@ -1,5 +1,3 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
 # dependencies
 node_modules/
 
@@ -30,7 +28,13 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# Windows
+Thumbs.db
+Desktop.ini
+
+# env files - NEVER push these
+.env
+.env.local
 .env*.local
 
 # typescript
@@ -39,3 +43,21 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# editor stuff
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# logs
+*.log
+
+# OS junk
+._*
+
+# internal design docs
+DESIGN_REFERENCE.md
+FIGMA_AUDIT.md
+figmass/
