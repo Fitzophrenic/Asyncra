@@ -119,9 +119,9 @@ export default function DashboardScreen() {
             </Appear>
             <Appear from="down" delay={100} duration={500} key={`alert-${focusKey}`} style={{ flex: 1 }}>
               <AlertBanner
-                severity={mockDashboard.alerts[0].severity}
-                title={mockDashboard.alerts[0].title}
-                subtitle={mockDashboard.alerts[0].subtitle}
+                severity={dashboard.alerts[0].severity}
+                title={dashboard.alerts[0].title}
+                subtitle={dashboard.alerts[0].subtitle}
               />
             </Appear>
           </View>
@@ -129,7 +129,7 @@ export default function DashboardScreen() {
           {/* Stat tiles */}
           <View style={{ flexDirection: "row", gap: 16, marginBottom: 16 }}>
             <Appear delay={140} duration={550} style={{ flex: 1 }} key={`credits-${focusKey}`}>
-              <StatTile label="TOTAL CREDITS" value={String(mockDashboard.totalCredits)} />
+              <StatTile label="TOTAL CREDITS" value={String(dashboard.totalCredits)} />
             </Appear>
             <Appear delay={200} duration={550} style={{ flex: 1 }} key={`hours-${focusKey}`}>
               <StatTile label="WEEKLY HOURS" value="35–43" />
@@ -154,7 +154,7 @@ export default function DashboardScreen() {
           {/* Courses */}
           <Text className={`mt-6 mb-4 text-2xl font-bold ${t.text}`}>Your Courses</Text>
           <View className={isWide ? "flex-row flex-wrap -mx-2" : ""}>
-            {mockCourses.map((c, i) => (
+            {courses.map((c, i) => (
               <Appear
                 key={`${c.id}-${focusKey}`}
                 from="down"
@@ -193,7 +193,7 @@ export default function DashboardScreen() {
           </View>
 
           <View className={`${t.bgCard} border ${t.border} rounded-2xl p-3`}>
-            {mockDashboard.upcomingDeadlines.map((d, i) => {
+            {dashboard.upcomingDeadlines.map((d, i) => {
               const { month, day } = dateParts(d.dueDate);
               const color = urgencyColor(d.daysLeft);
               return (
