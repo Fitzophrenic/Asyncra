@@ -1,15 +1,9 @@
 // app data store - all the data screens need lives here
-// currently uses mock data, swap fetch methods to real api calls later
+// currently uses real api fetch methods
 
 import { create } from "zustand";
 import type { Course, Deadline, Notification, ProgramComparison, DashboardData } from "./types";
-import {
-  mockCourses,
-  mockDeadlines,
-  mockNotifications,
-  mockComparisons,
-  mockDashboard,
-} from "./mockData";
+import { dashboardApi, courseApi, notificationApi, comparisonApi } from "./api";
 
 type AppStore = {
   courses: Course[];
@@ -30,23 +24,40 @@ type AppStore = {
   addStudyLog: (log: { courseCode: string; courseName: string; duration: number }) => void;
   removeStudyLog: (id: string) => void;
 
-  // data fetching - replace with api calls
+  // data fetching
   fetchDashboard: () => Promise<void>;
   fetchCourses: () => Promise<void>;
   fetchCourse: (id: string) => Course | undefined;
   fetchNotifications: () => Promise<void>;
   fetchComparisons: (query?: string) => Promise<void>;
-  dismissNotification: (id: string) => void;
+  dismissNotification: (id: string) => Promise<void>;
   addCourse: (course: Course) => void;
-  removeCourse: (id: string) => void;
+  removeCourse: (id: string) => Promise<void>;
 };
 
 export const useAppStore = create<AppStore>((set, get) => ({
-  courses: mockCourses,
-  deadlines: mockDeadlines,
-  notifications: mockNotifications,
-  comparisons: mockComparisons,
-  dashboard: mockDashboard,
+  courses: [],
+  deadlines: [],
+  notifications: [],
+  comparisons: [],
+  dashboard: {
+    user: {
+      id: "",
+      name: "",
+      email: "",
+      initials: "",
+      major: "",
+      enrollment: "full-time",
+      goal: "",
+      weeklyHours: 0,
+      role: "STUDENT",
+    },
+    totalCredits: 0,
+    weeklyHours: [0, 0],
+    alerts: [],
+    courses: [],
+    upcomingDeadlines: [],
+  },
   isLoading: false,
   studyLogs: [],
 
@@ -62,31 +73,57 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set((s) => ({ studyLogs: s.studyLogs.filter((l) => l.id !== id) })),
 
   fetchDashboard: async () => {
-    // TODO: const data = await dashboardApi.get();
-    // set({ dashboard: data, courses: data.courses });
+    set({ isLoading: true });
+    try {
+      const data = await dashboardApi.get();
+      set({
+        dashboard: data,
+        courses: data.courses,
+        deadlines: data.upcomingDeadlines,
+      });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   fetchCourses: async () => {
-    // TODO: const courses = await courseApi.list();
-    // set({ courses });
+    set({ isLoading: true });
+    try {
+      const courses = await courseApi.list();
+      set({ courses });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   fetchCourse: (id) => get().courses.find((c) => c.id === id),
 
   fetchNotifications: async () => {
-    // TODO: const notifs = await notificationApi.list();
-    // set({ notifications: notifs });
+    set({ isLoading: true });
+    try {
+      const notifications = await notificationApi.list();
+      set({ notifications });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
-  fetchComparisons: async (_query?: string) => {
-    // TODO: const comps = await comparisonApi.list(query);
-    // set({ comparisons: comps });
+  fetchComparisons: async (query?: string) => {
+    set({ isLoading: true });
+    try {
+      const comparisons = await comparisonApi.list(query);
+      set({ comparisons });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
-  dismissNotification: (id) =>
+  dismissNotification: async (id) => {
+    await notificationApi.dismiss(id);
     set((s) => ({
       notifications: s.notifications.filter((n) => n.id !== id),
-    })),
+    }));
+  },
 
   addCourse: (course) =>
     set((s) => ({
@@ -98,7 +135,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       },
     })),
 
-  removeCourse: (id) =>
+  removeCourse: async (id) => {
+    await courseApi.remove(id);
     set((s) => {
       const course = s.courses.find((c) => c.id === id);
       return {
@@ -109,5 +147,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
           totalCredits: s.dashboard.totalCredits - (course?.credits ?? 0),
         },
       };
-    }),
+    });
+  },
 }));
