@@ -15,6 +15,7 @@ import Appear, { useFocusKey } from "../../components/ui/Appear";
 import { Logo } from "../../components/ui/Logo";
 import TodayFocus from "../../components/domain/TodayFocus";
 import WeeklyProgressRing from "../../components/domain/WeeklyProgressRing";
+import { parseIsoLocal } from "../../lib/dateUtils";
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
@@ -26,7 +27,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
 }
 
 function dateParts(iso: string) {
-  const d = new Date(iso);
+  const d = parseIsoLocal(iso);
   const month = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
   const day = String(d.getDate()).padStart(2, "0");
   return { month, day };
@@ -66,9 +67,21 @@ export default function DashboardScreen() {
   const t = tokens[mode];
   const isWide = useIsWide();
   const user = useAuth((s) => s.user);
+  const isAuthenticated = useAuth((s) => s.isAuthenticated);
   const courses = useAppStore((s) => s.courses);
   const dashboard = useAppStore((s) => s.dashboard);
+  const fetchDashboard = useAppStore((s) => s.fetchDashboard);
+  const studyLogs = useAppStore((s) => s.studyLogs);
   const firstName = (user?.name ?? "Student").split(" ")[0];
+
+  // compute hours logged in the last 7 days from real study timer entries
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const loggedHours = Math.round(
+    studyLogs
+      .filter((log) => new Date(log.timestamp).getTime() >= weekAgo)
+      .reduce((sum, log) => sum + log.duration, 0) / 3600
+  );
+  const weeklyTarget = user?.weeklyHours ?? 20;
 
   // Only animate on first mount, not when returning from stack screens
   const [animKey] = React.useState(() => Date.now());
@@ -77,6 +90,15 @@ export default function DashboardScreen() {
   const goToCourse = (course: Course) => {
     navigation.navigate("CourseDetail", { courseId: course.id });
   };
+
+  // pull fresh dashboard data whenever this screen regains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isAuthenticated) {
+        fetchDashboard().catch((err) => console.warn("fetchDashboard failed:", err));
+      }
+    }, [isAuthenticated, fetchDashboard])
+  );
 
   const setSidebarPinned = useSidebar((s) => s.setPinned);
   useFocusEffect(
@@ -117,13 +139,15 @@ export default function DashboardScreen() {
             <Appear from="down" delay={40} duration={500} key={`focus-${focusKey}`} style={{ flex: 1 }}>
               <TodayFocus />
             </Appear>
-            <Appear from="down" delay={100} duration={500} key={`alert-${focusKey}`} style={{ flex: 1 }}>
-              <AlertBanner
-                severity={dashboard.alerts[0].severity}
-                title={dashboard.alerts[0].title}
-                subtitle={dashboard.alerts[0].subtitle}
-              />
-            </Appear>
+            {dashboard.alerts[0] && (
+              <Appear from="down" delay={100} duration={500} key={`alert-${focusKey}`} style={{ flex: 1 }}>
+                <AlertBanner
+                  severity={dashboard.alerts[0].severity}
+                  title={dashboard.alerts[0].title}
+                  subtitle={dashboard.alerts[0].subtitle}
+                />
+              </Appear>
+            )}
           </View>
 
           {/* Stat tiles */}
@@ -132,13 +156,20 @@ export default function DashboardScreen() {
               <StatTile label="TOTAL CREDITS" value={String(dashboard.totalCredits)} />
             </Appear>
             <Appear delay={200} duration={550} style={{ flex: 1 }} key={`hours-${focusKey}`}>
-              <StatTile label="WEEKLY HOURS" value="35–43" />
+              <StatTile
+                label="WEEKLY HOURS"
+                value={
+                  dashboard.weeklyHours[0] === 0 && dashboard.weeklyHours[1] === 0
+                    ? "—"
+                    : `${dashboard.weeklyHours[0]}–${dashboard.weeklyHours[1]}`
+                }
+              />
             </Appear>
           </View>
 
           {/* Weekly progress */}
           <Appear from="down" delay={260} duration={550} key={`progress-${focusKey}`}>
-            <WeeklyProgressRing logged={14} target={20} />
+            <WeeklyProgressRing logged={loggedHours} target={weeklyTarget} />
           </Appear>
 
           {/* Quick actions */}

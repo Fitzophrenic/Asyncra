@@ -27,7 +27,7 @@ import UploadScreen from "../screens/app/UploadScreen";
 export type RootStackParamList = {
   Welcome: undefined;
   Landing: undefined;
-  Processing: undefined;
+  Processing: { draft?: { uri: string; name: string; mimeType?: string } };
   Preview: undefined;
   SignUp: undefined;
   SignIn: undefined;

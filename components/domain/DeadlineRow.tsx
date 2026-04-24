@@ -3,6 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import { Pill } from "../ui";
 import type { Deadline } from "../../lib/types";
 import { useTheme, tokens } from "../../lib/theme";
+import { parseIsoLocal } from "../../lib/dateUtils";
 
 type Props = {
   deadline: Deadline;
@@ -12,7 +13,7 @@ type Props = {
 };
 
 function formatDate(iso: string) {
-  const d = new Date(iso);
+  const d = parseIsoLocal(iso);
   const month = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
   return `${month} ${d.getDate()}`;
 }

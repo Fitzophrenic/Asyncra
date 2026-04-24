@@ -1,15 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AlertCircle, AlertTriangle, Info, X } from "lucide-react-native";
 
 import type { Notification } from "../../lib/types";
 import { useAppStore } from "../../lib/store";
+import { useAuth } from "../../lib/auth";
 import { useTheme, tokens } from "../../lib/theme";
 
 import HeaderBand from "../../components/ui/HeaderBand";
-import Card from "../../components/ui/Card";
-import Toggle from "../../components/ui/Toggle";
 import Appear, { useFocusKey } from "../../components/ui/Appear";
 import { useIsWide } from "../../components/layout/AppShell";
 
@@ -67,12 +67,19 @@ export default function NotificationsScreen() {
   const focusKey = useFocusKey();
   const isWide = useIsWide();
 
-  const [email, setEmail] = useState(true);
-  const [push, setPush] = useState(true);
-  const [reminders, setReminders] = useState(true);
   const notifications = useAppStore((s) => s.notifications);
   const dismissNotification = useAppStore((s) => s.dismissNotification);
+  const fetchNotifications = useAppStore((s) => s.fetchNotifications);
+  const isAuthenticated = useAuth((s) => s.isAuthenticated);
   const items = notifications;
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isAuthenticated) {
+        fetchNotifications().catch((err) => console.warn("fetchNotifications failed:", err));
+      }
+    }, [isAuthenticated, fetchNotifications])
+  );
 
   const dismiss = (id: string) => dismissNotification(id);
 
@@ -91,16 +98,7 @@ export default function NotificationsScreen() {
         }}
       >
         <View style={{ width: "100%" }}>
-        <Appear from="down" delay={60} duration={500} key={`settings-${focusKey}`}>
-          <Card className="mb-6">
-            <Text className={`text-base font-bold mb-2 ${t.text}`}>Notification Settings</Text>
-            <Toggle value={email} onChange={setEmail} label="Email Notifications" subtitle="Receive alerts via email" />
-            <Toggle value={push} onChange={setPush} label="Push Notifications" subtitle="Get mobile push alerts" />
-            <Toggle value={reminders} onChange={setReminders} label="Deadline Reminders" subtitle="24hr advance reminders" />
-          </Card>
-        </Appear>
-
-        <Appear from="fade" delay={150} duration={400} key={`title-${focusKey}`}>
+        <Appear from="fade" delay={60} duration={400} key={`title-${focusKey}`}>
           <Text className={`text-xl font-bold mb-3 ${t.text}`}>Recent Alerts</Text>
         </Appear>
 

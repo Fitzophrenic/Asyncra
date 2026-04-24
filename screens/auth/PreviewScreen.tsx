@@ -8,13 +8,23 @@ import { PrimaryButton } from "../../components/ui/PrimaryButton";
 import { Appear } from "../../components/ui/Appear";
 import { ProgressBar } from "../../components/ui/ProgressBar";
 import { useAppStore } from "../../lib/store";
+import { mockCourses } from "../../lib/mockData";
 import { useIsWide } from "../../components/layout/AppShell";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Preview">;
 
+const WORKLOAD_COLOR: Record<string, { bg: string; dot: string; text: string }> = {
+  light: { bg: "#E6F9EF", dot: "#3FBF7F", text: "#14532D" },
+  medium: { bg: "#FEF3E2", dot: "#E0A23A", text: "#9A6A1F" },
+  heavy: { bg: "#FEE2E2", dot: "#E25C5C", text: "#7F1D1D" },
+};
+
 export default function PreviewScreen({ navigation }: Props) {
-  const courses = useAppStore((s) => s.courses);
-  const course = courses[0];
+  const pending = useAppStore((s) => s.pendingAnalysis);
+  // fall back to a mock course if a user somehow lands here without a pending analysis
+  const course = pending ?? mockCourses[0];
+  const workloadStyle = WORKLOAD_COLOR[course.workload] ?? WORKLOAD_COLOR.medium;
+  const workloadLabel = course.workload.charAt(0).toUpperCase() + course.workload.slice(1);
   const isWide = useIsWide();
 
   const courseCard = (
@@ -30,9 +40,9 @@ export default function PreviewScreen({ navigation }: Props) {
             <Text style={{ fontSize: isWide ? 22 : 20, fontWeight: "700", color: "#13243A" }}>{course.title}</Text>
             <Text style={{ fontSize: 12, color: "#64748B", marginTop: 3 }}>{course.code} · {course.term} · {course.credits} Credits</Text>
           </View>
-          <View style={{ backgroundColor: "#FEF3E2", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, flexDirection: "row", alignItems: "center" }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#E0A23A" }} />
-            <Text style={{ marginLeft: 5, fontSize: 11, fontWeight: "600", color: "#9A6A1F" }}>Medium</Text>
+          <View style={{ backgroundColor: workloadStyle.bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, flexDirection: "row", alignItems: "center" }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: workloadStyle.dot }} />
+            <Text style={{ marginLeft: 5, fontSize: 11, fontWeight: "600", color: workloadStyle.text }}>{workloadLabel}</Text>
           </View>
         </View>
 
@@ -106,9 +116,9 @@ export default function PreviewScreen({ navigation }: Props) {
         <View style={{ width: "100%", marginTop: 20, gap: 10 }}>
           {[
             { icon: TrendingUp, text: "AI course summary", color: "#5DBFD6" },
-            { icon: Calendar, text: "Weekly study planner", color: "#E0A23A" },
-            { icon: BookOpen, text: "Workload breakdown", color: "#3FBF7F" },
-            { icon: Target, text: "Study roadmap", color: "#8B5CF6" },
+            { icon: Calendar, text: "Weekly schedule & deadlines", color: "#E0A23A" },
+            { icon: BookOpen, text: "Grade & hour breakdown", color: "#3FBF7F" },
+            { icon: Target, text: "Program comparison", color: "#8B5CF6" },
           ].map((item, i) => (
             <View key={i} style={{ flexDirection: "row", alignItems: "center" }}>
               <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: `${item.color}14`, alignItems: "center", justifyContent: "center" }}>

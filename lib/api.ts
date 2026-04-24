@@ -1,5 +1,4 @@
-// api client - handles all fetch requests to backend
-// swap API_BASE_URL to your server once its deployed
+// api client - all fetch calls to our backend
 
 import type {
   User,
@@ -12,8 +11,8 @@ import type {
 } from "./types";
 import { useAuth } from "./auth";
 
-// set this to your backend URL
-const API_BASE_URL = "";
+// change to your LAN IP for phone testing
+const API_BASE_URL = "http://localhost:3001";
 
 // helper that attaches auth token to every request
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -31,7 +30,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error(`API ${res.status}: ${body}`);
   }
 
-  return res.json();
+  // DELETE and other no-content responses don't have a JSON body
+  if (res.status === 204) return undefined as T;
+  const contentLength = res.headers.get("content-length");
+  if (contentLength === "0") return undefined as T;
+  const text = await res.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 // auth
@@ -81,18 +86,53 @@ export const courseApi = {
   remove: (id: string) => request<void>(`/courses/${id}`, { method: "DELETE" }),
 };
 
-// file upload + AI analysis
-export const uploadApi = {
-  // uploads a PDF and returns the parsed course data
-  analyzeSyllabus: async (fileUri: string, fileName: string, mimeType: string) => {
-    const token = useAuth.getState().token;
-    const formData = new FormData();
-
+// build FormData for file upload (web vs native)
+async function buildFileFormData(fileUri: string, fileName: string, mimeType: string): Promise<FormData> {
+  const formData = new FormData();
+  if (typeof window !== "undefined" && typeof document !== "undefined") {
+    const response = await fetch(fileUri);
+    const blob = await response.blob();
+    formData.append("file", blob, fileName);
+  } else {
     formData.append("file", {
       uri: fileUri,
       name: fileName,
       type: mimeType,
     } as any);
+  }
+  return formData;
+}
+
+// file upload + AI analysis
+export const uploadApi = {
+  // public preview, no auth needed
+  preview: async (fileUri: string, fileName: string, mimeType: string) => {
+    const formData = await buildFileFormData(fileUri, fileName, mimeType);
+
+    const res = await fetch(`${API_BASE_URL}/upload/preview`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`Preview failed ${res.status}: ${body}`);
+    }
+
+    return res.json() as Promise<SyllabusAnalysis>;
+  },
+
+  // save a previewed analysis as a real course
+  save: (analysis: SyllabusAnalysis) =>
+    request<SyllabusAnalysis>("/upload/save", {
+      method: "POST",
+      body: JSON.stringify(analysis),
+    }),
+
+  // upload + analyze + save in one shot (auth required)
+  analyzeSyllabus: async (fileUri: string, fileName: string, mimeType: string) => {
+    const token = useAuth.getState().token;
+    const formData = await buildFileFormData(fileUri, fileName, mimeType);
 
     const res = await fetch(`${API_BASE_URL}/upload/syllabus`, {
       method: "POST",
@@ -110,7 +150,7 @@ export const uploadApi = {
     return res.json() as Promise<SyllabusAnalysis>;
   },
 
-  // analyze from a URL instead of file upload
+  // analyze from URL
   analyzeSyllabusUrl: (url: string) =>
     request<SyllabusAnalysis>("/upload/syllabus-url", {
       method: "POST",

@@ -3,6 +3,37 @@
 
 export type Workload = "light" | "medium" | "heavy";
 export type DeadlineType = "project" | "exam" | "assignment" | "lab";
+export type MeetingType = "lecture" | "lab" | "section" | "office-hours" | "other";
+export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+
+export type MeetingTime = {
+  day: Weekday;
+  type: MeetingType;
+  start: string;   // 24h "HH:MM" like "14:00"
+  end: string;     // 24h "HH:MM" like "15:30"
+  location?: string;
+};
+
+export type GradeScaleRow = {
+  letter: string;      // "A+", "A", "A-", "B+", etc.
+  minPercent: number;  // inclusive lower bound
+};
+
+export type Instructor = {
+  name: string;
+  email?: string;
+  office?: string;       // e.g. "MATH 239", "3272H - Patrick F. Taylor Hall"
+  phone?: string;
+  officeHours?: string;  // free-form, e.g. "MTWTh 1:00-2:00pm (Zoom)"
+};
+
+export type Textbook = {
+  title: string;
+  author?: string;
+  edition?: string;
+  isbn?: string;
+  required?: boolean;    // true = required, false = recommended
+};
 
 export type Deadline = {
   id: string;
@@ -41,6 +72,12 @@ export type Course = {
   skills: string[];
   deadlines: Deadline[];
   aiSummary?: string;
+  description?: string;
+  meetingTimes?: MeetingTime[];
+  gradingScale?: GradeScaleRow[];
+  instructor?: Instructor;
+  textbook?: Textbook;
+  prerequisites?: string;
 };
 
 export type User = {
@@ -103,6 +140,12 @@ export type SyllabusAnalysis = {
     dueDate: string;
   }[];
   aiSummary: string;
+  description: string;
+  meetingTimes: MeetingTime[];
+  gradingScale: GradeScaleRow[];
+  instructor: Instructor;
+  textbook: Textbook;
+  prerequisites: string;
 };
 
 // collected during onboarding steps

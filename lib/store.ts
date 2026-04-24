@@ -2,7 +2,7 @@
 // currently uses real api fetch methods
 
 import { create } from "zustand";
-import type { Course, Deadline, Notification, ProgramComparison, DashboardData } from "./types";
+import type { Course, Deadline, Notification, ProgramComparison, DashboardData, SyllabusAnalysis } from "./types";
 import { dashboardApi, courseApi, notificationApi, comparisonApi } from "./api";
 
 type AppStore = {
@@ -12,6 +12,10 @@ type AppStore = {
   comparisons: ProgramComparison[];
   dashboard: DashboardData;
   isLoading: boolean;
+
+  // holds preview analysis until signup saves it as a course
+  pendingAnalysis: SyllabusAnalysis | null;
+  setPendingAnalysis: (analysis: SyllabusAnalysis | null) => void;
 
   // study timer logs (stored locally for now)
   studyLogs: {
@@ -60,6 +64,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
   isLoading: false,
   studyLogs: [],
+  pendingAnalysis: null,
+
+  setPendingAnalysis: (analysis) => set({ pendingAnalysis: analysis }),
 
   addStudyLog: (log) =>
     set((s) => ({

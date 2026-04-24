@@ -5,6 +5,8 @@ import { ChevronDown, ChevronUp, LogOut, Save, Sun, Moon, Bell, Shield } from "l
 import { useNavigation, CommonActions } from "@react-navigation/native";
 
 import { useAuth } from "../../lib/auth";
+import { useAppStore } from "../../lib/store";
+import { userApi } from "../../lib/api";
 import { useTheme, tokens } from "../../lib/theme";
 
 import HeaderBand from "../../components/ui/HeaderBand";
@@ -27,6 +29,8 @@ export default function ProfileScreen() {
   const user = useAuth((s) => s.user);
   const updateUser = useAuth((s) => s.updateUser);
   const signOut = useAuth((s) => s.signOut);
+  const courses = useAppStore((s) => s.courses);
+  const dashboard = useAppStore((s) => s.dashboard);
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [major, setMajor] = useState(user?.major ?? "");
@@ -36,7 +40,8 @@ export default function ProfileScreen() {
   const [hours, setHours] = useState(String(user?.weeklyHours ?? 20));
   const [emailNotifs, setEmailNotifs] = useState(true);
   const [pushNotifs, setPushNotifs] = useState(true);
-  const [avatarColor, setAvatarColor] = useState("#5DBFD6");
+  const [avatarColor, setAvatarColor] = useState(user?.avatarColor ?? "#5DBFD6");
+  const [saving, setSaving] = useState(false);
 
   const profileCard = (
     <Appear from="down" delay={60} duration={500} key={`avatar-${focusKey}`}>
@@ -52,21 +57,21 @@ export default function ProfileScreen() {
               backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "#F8FAFC",
               borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, alignItems: "center",
             }}>
-              <Text style={{ fontSize: 16, fontWeight: "700", color: "#5DBFD6" }}>3</Text>
+              <Text style={{ fontSize: 16, fontWeight: "700", color: "#5DBFD6" }}>{courses.length}</Text>
               <Text style={{ fontSize: 10, color: isDark ? "#8A9BB5" : "#64748B" }}>Courses</Text>
             </View>
             <View style={{
               backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "#F8FAFC",
               borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, alignItems: "center",
             }}>
-              <Text style={{ fontSize: 16, fontWeight: "700", color: "#5DBFD6" }}>10</Text>
+              <Text style={{ fontSize: 16, fontWeight: "700", color: "#5DBFD6" }}>{dashboard.totalCredits}</Text>
               <Text style={{ fontSize: 10, color: isDark ? "#8A9BB5" : "#64748B" }}>Credits</Text>
             </View>
             <View style={{
               backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "#F8FAFC",
               borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, alignItems: "center",
             }}>
-              <Text style={{ fontSize: 16, fontWeight: "700", color: "#5DBFD6" }}>20</Text>
+              <Text style={{ fontSize: 16, fontWeight: "700", color: "#5DBFD6" }}>{user?.weeklyHours ?? 0}</Text>
               <Text style={{ fontSize: 10, color: isDark ? "#8A9BB5" : "#64748B" }}>Hrs/wk</Text>
             </View>
           </View>
@@ -170,21 +175,48 @@ export default function ProfileScreen() {
     <Appear from="down" delay={380} duration={500} key={`btns-${focusKey}`}>
       <View style={{ flexDirection: "row", gap: 12 }}>
         <Pressable
-          onPress={() => {
+          onPress={async () => {
+            if (saving) return;
+            setSaving(true);
             const parts = name.trim().split(" ");
             const initials = parts.length >= 2
               ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
               : name.trim().slice(0, 2).toUpperCase();
-            updateUser({ name: name.trim(), email, major, enrollment, goal, weeklyHours: Number(hours) || 20, avatarColor, initials });
-            // TODO: call userApi.updateProfile() when backend is ready
+            const payload = {
+              name: name.trim(),
+              major,
+              enrollment,
+              goal,
+              weeklyHours: Number(hours) || 20,
+              avatarColor,
+            };
+            // optimistic local update so UI feels instant
+            updateUser({ ...payload, email, initials });
+            try {
+              const updated = await userApi.updateProfile(payload);
+              // sync with server-authoritative shape (e.g. recalculated initials)
+              updateUser(updated);
+            } catch (err) {
+              console.warn("updateProfile failed:", err);
+              if (Platform.OS === "web") {
+                window.alert("Couldn't save profile changes. Please try again.");
+              } else {
+                Alert.alert("Save failed", "Couldn't save profile changes. Please try again.");
+              }
+            } finally {
+              setSaving(false);
+            }
           }}
           style={{
             flex: 1, backgroundColor: "#5DBFD6", borderRadius: 14, paddingVertical: 14,
             flexDirection: "row", alignItems: "center", justifyContent: "center",
+            opacity: saving ? 0.6 : 1,
           }}
         >
           <Save size={16} color="#FFFFFF" />
-          <Text style={{ color: "#FFFFFF", fontWeight: "600", marginLeft: 8, fontSize: 14 }}>Save</Text>
+          <Text style={{ color: "#FFFFFF", fontWeight: "600", marginLeft: 8, fontSize: 14 }}>
+            {saving ? "Saving..." : "Save"}
+          </Text>
         </Pressable>
         <Pressable
           onPress={() => {

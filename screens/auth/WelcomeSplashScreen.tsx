@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { View, Text, FlatList, Dimensions, Pressable, Platform } from "react-native";
+import { CommonActions } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FileText, BarChart3, Target, ArrowRight, ChevronRight } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
@@ -8,6 +9,7 @@ import { RootStackParamList } from "../../navigation/RootNavigator";
 import { Logo } from "../../components/ui/Logo";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
 import { useIsWide } from "../../components/layout/AppShell";
+import { useAuth } from "../../lib/auth";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Welcome">;
 
@@ -16,19 +18,19 @@ type Slide = { title: string; body: string; Icon: LucideIcon; highlight: string 
 const slides: Slide[] = [
   {
     title: "What is Asyncra?",
-    body: "Your AI-powered academic advisor that transforms syllabi into personalized study plans, workload insights, and deadline tracking.",
+    body: "Your AI-powered academic advisor. Upload syllabi, track deadlines, manage your schedule, and compare programs — all in one app.",
     Icon: FileText,
     highlight: "AI-powered academic advisor",
   },
   {
     title: "How It Works",
-    body: "Upload your syllabus PDF, and our AI instantly extracts key dates, grading weights, weekly hour estimates, and skills — all in seconds.",
+    body: "Upload your syllabus. Our AI extracts grade weights, weekly hours, meeting times, deadlines, and more — in seconds.",
     Icon: BarChart3,
     highlight: "Upload → Analyze → Organize",
   },
   {
     title: "Stay on Track",
-    body: "Get personalized roadmaps, deadline alerts, and workload comparisons to help you succeed in every course.",
+    body: "Weekly calendar, deadline alerts, GPA calculator, study timer, and real college program comparisons — all built in.",
     Icon: Target,
     highlight: "Never miss a deadline again",
   },
@@ -268,5 +270,22 @@ function WebSplash({ navigation }: Props) {
 
 export default function WelcomeSplashScreen(props: Props) {
   const isWide = useIsWide();
+  const isAuthenticated = useAuth((s) => s.isAuthenticated);
+
+  // if the user already has a valid session (persisted across refresh), skip the
+  // marketing splash and send them straight to the dashboard.
+  useEffect(() => {
+    if (isAuthenticated) {
+      props.navigation.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: "AppTabs" }] })
+      );
+    }
+  }, [isAuthenticated, props.navigation]);
+
+  if (isAuthenticated) {
+    // brief neutral background while navigation reset flushes, not a null render
+    return <View style={{ flex: 1, backgroundColor: "#F4F7FB" }} />;
+  }
+
   return isWide ? <WebSplash {...props} /> : <MobileSplash {...props} />;
 }

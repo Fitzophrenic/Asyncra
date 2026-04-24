@@ -1,9 +1,9 @@
-import { View, Text, ScrollView, TextInput, KeyboardAvoidingView, Platform, Dimensions, FlatList, Pressable } from "react-native";
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Dimensions, FlatList, Pressable } from "react-native";
 import type { NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Link as LinkIcon, Zap, BarChart3, Map } from "lucide-react-native";
+import { Zap, CalendarDays, GraduationCap } from "lucide-react-native";
 
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { Card } from "../../components/ui/Card";
@@ -16,9 +16,9 @@ import { useIsWide } from "../../components/layout/AppShell";
 type Props = NativeStackScreenProps<RootStackParamList, "Landing">;
 
 const features = [
-  { title: "Instant Analysis", body: "AI reads and structures your syllabus in seconds", Icon: Zap },
-  { title: "Workload Insights", body: "Know exactly how many hours each course demands", Icon: BarChart3 },
-  { title: "Smart Planning", body: "Get personalized roadmaps for academic success", Icon: Map },
+  { title: "Instant Analysis", body: "AI pulls deadlines, grades, meeting times, and more from your syllabus", Icon: Zap },
+  { title: "Stay Organized", body: "Weekly calendar, deadline alerts, GPA calc, and study timer in one place", Icon: CalendarDays },
+  { title: "Compare Programs", body: "Side-by-side U.S. college comparisons for your major, powered by real federal data", Icon: GraduationCap },
 ];
 
 function FeatureCard({ item }: { item: typeof features[number] }) {
@@ -126,18 +126,16 @@ function FeatureCarousel() {
 }
 
 export default function LandingScreen({ navigation }: Props) {
-  const [url, setUrl] = useState("");
   const [drafts, setDrafts] = useState<Draft[]>([]);
 
-  const canAnalyze = drafts.length > 0 || url.trim().length > 0;
+  const canAnalyze = drafts.length > 0;
 
   const onAnalyze = () => {
     if (!canAnalyze) return;
-    if (drafts.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log("Analyzing drafts:", drafts);
-    }
-    navigation.navigate("Processing");
+    const d = drafts[0];
+    navigation.navigate("Processing", {
+      draft: { uri: d.uri, name: d.name, mimeType: d.mimeType },
+    });
   };
 
   return (
@@ -186,30 +184,9 @@ export default function LandingScreen({ navigation }: Props) {
       <View className="px-5 -mt-40 items-center">
         <Appear from="down" delay={380} duration={650} className="w-full max-w-[820px] mx-auto">
           <Card variant="paper" className="p-8 shadow-xl">
-            <UploadDropzone onDraftsChange={setDrafts} />
-            <View className="flex-row items-center my-5">
-              <View className="flex-1 h-px bg-slate-200" />
-              <Text className="mx-3 text-slate-400 text-xs font-semibold">OR</Text>
-              <View className="flex-1 h-px bg-slate-200" />
-            </View>
-            <View className="flex-row items-center gap-3">
-              <View
-                className="flex-1 flex-row items-center rounded-2xl bg-white px-4"
-                style={{ borderWidth: 1, borderColor: "#5DBFD6", height: 52 }}
-              >
-                <LinkIcon size={18} color="#5DBFD6" />
-                <TextInput
-                  value={url}
-                  onChangeText={setUrl}
-                  placeholder="Paste syllabus URL here"
-                  placeholderTextColor="#94A3B8"
-                  className="flex-1 ml-3 text-base"
-                  style={{ color: "#13243A", outlineStyle: "none" } as any}
-                />
-              </View>
-              <View className="w-32">
-                <PrimaryButton title="Analyze" onPress={onAnalyze} disabled={!canAnalyze} />
-              </View>
+            <UploadDropzone onDraftsChange={setDrafts} onLight multi={false} hint="Supports PDF, DOC, DOCX • Upload one to preview — add more after signup" />
+            <View className="mt-5">
+              <PrimaryButton title="Analyze Syllabus" onPress={onAnalyze} disabled={!canAnalyze} />
             </View>
             <Text className="text-center text-slate-400 text-xs mt-4 tracking-wider">
               NO ACCOUNT REQUIRED TO GET STARTED

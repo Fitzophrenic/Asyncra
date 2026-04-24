@@ -66,7 +66,7 @@ export default function Sidebar() {
 
   return (
     <View
-      // @ts-ignore — onMouseEnter/Leave are web-only DOM events
+      // @ts-ignore - onMouseEnter/Leave are web-only DOM events
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{ height: "100%" }}

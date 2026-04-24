@@ -1,14 +1,15 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Calendar, ChevronDown, ChevronUp, Clock } from "lucide-react-native";
+import { Calendar, ChevronDown, ChevronUp, Clock, Trash2 } from "lucide-react-native";
 
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { useAppStore } from "../../lib/store";
 import { useTheme, tokens } from "../../lib/theme";
 import { useIsWide } from "../../components/layout/AppShell";
 
+import { parseIsoLocal } from "../../lib/dateUtils";
 import HeaderBand from "../../components/ui/HeaderBand";
 import Card from "../../components/ui/Card";
 import Pill from "../../components/ui/Pill";
@@ -27,11 +28,38 @@ export default function CourseDetailScreen({ route, navigation }: Props) {
   const courseId = route.params?.courseId;
   const courses = useAppStore((s) => s.courses);
   const course = courses.find((c) => c.id === courseId) ?? courses[0];
+  const removeCourse = useAppStore((s) => s.removeCourse);
   const focusKey = useFocusKey();
+  const [deleting, setDeleting] = useState(false);
 
-  const [descOpen, setDescOpen] = useState(true);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [gradingOpen, setGradingOpen] = useState(false);
+  const handleDelete = async () => {
+    if (!course || deleting) return;
+    const doDelete = async () => {
+      setDeleting(true);
+      try {
+        await removeCourse(course.id);
+        navigation.goBack();
+      } catch (err) {
+        console.warn("Failed to delete course:", err);
+        if (Platform.OS === "web") {
+          window.alert("Couldn't delete this course. Please try again.");
+        } else {
+          Alert.alert("Delete failed", "Couldn't delete this course. Please try again.");
+        }
+        setDeleting(false);
+      }
+    };
+    const confirmMsg = `Delete ${course.code} (${course.title})? This can't be undone.`;
+    if (Platform.OS === "web") {
+      if (window.confirm(confirmMsg)) doDelete();
+    } else {
+      Alert.alert("Delete course", confirmMsg, [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: doDelete },
+      ]);
+    }
+  };
+
 
   const donutData = [
     { label: "Exams", value: course.gradeWeights.exams, color: "#1B3A6B" },
@@ -130,38 +158,130 @@ export default function CourseDetailScreen({ route, navigation }: Props) {
     </Appear>
   ) : null;
 
-  const DescriptionCard = (
-    <Appear from="down" delay={400} duration={500} key={`desc-${focusKey}`}>
-      <Section title="Course Description" open={descOpen} onToggle={() => setDescOpen((v) => !v)}>
-        <Text className={`text-sm leading-5 ${t.textSecondary}`}>
-          Explore the fundamentals of data science including data collection, cleaning, analysis,
-          and visualization...
-        </Text>
-      </Section>
-    </Appear>
+  const instructor = course.instructor;
+  const textbook = course.textbook;
+  const prerequisites = course.prerequisites;
+  const hasCourseInfo = Boolean(
+    (instructor && instructor.name) ||
+    (textbook && textbook.title) ||
+    (prerequisites && prerequisites.length > 0)
   );
 
-  const ScheduleCard = (
+  const CourseInfoCard = hasCourseInfo ? (
+    <Appear from="down" delay={400} duration={500} key={`info-${focusKey}`}>
+      <Card variant="surface" className="mb-4">
+        <Text className={`text-base font-bold mb-3 ${t.text}`}>Course Info</Text>
+
+        {instructor && instructor.name ? (
+          <View className="mb-3">
+            <Text className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${t.textMuted}`}>Instructor</Text>
+            <Text className={`text-sm font-semibold ${t.text}`}>{instructor.name}</Text>
+            {instructor.email ? (
+              <Text className={`text-xs ${t.textSecondary}`}>{instructor.email}</Text>
+            ) : null}
+            {instructor.office ? (
+              <Text className={`text-xs ${t.textSecondary}`}>Office: {instructor.office}</Text>
+            ) : null}
+            {instructor.officeHours ? (
+              <Text className={`text-xs ${t.textSecondary}`}>Office Hours: {instructor.officeHours}</Text>
+            ) : null}
+            {instructor.phone ? (
+              <Text className={`text-xs ${t.textSecondary}`}>Phone: {instructor.phone}</Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        {textbook && textbook.title ? (
+          <View className="mb-3">
+            <Text className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${t.textMuted}`}>
+              {textbook.required === false ? "Recommended Textbook" : "Required Textbook"}
+            </Text>
+            <Text className={`text-sm font-semibold ${t.text}`}>{textbook.title}</Text>
+            {textbook.author || textbook.edition ? (
+              <Text className={`text-xs ${t.textSecondary}`}>
+                {textbook.author}
+                {textbook.author && textbook.edition ? " · " : ""}
+                {textbook.edition}
+              </Text>
+            ) : null}
+            {textbook.isbn ? (
+              <Text className={`text-xs ${t.textMuted}`}>ISBN: {textbook.isbn}</Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        {prerequisites ? (
+          <View>
+            <Text className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${t.textMuted}`}>Prerequisites</Text>
+            <Text className={`text-sm ${t.textSecondary}`}>{prerequisites}</Text>
+          </View>
+        ) : null}
+      </Card>
+    </Appear>
+  ) : null;
+
+  const meetingDayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const sortedMeetings = (course.meetingTimes ?? [])
+    .slice()
+    .sort((a, b) => {
+      const da = meetingDayOrder.indexOf(a.day);
+      const db = meetingDayOrder.indexOf(b.day);
+      if (da !== db) return da - db;
+      return a.start.localeCompare(b.start);
+    });
+
+  const formatTime12h = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return hhmm;
+    const period = h >= 12 ? "PM" : "AM";
+    const hour12 = h % 12 === 0 ? 12 : h % 12;
+    return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+  };
+
+  const ScheduleCard = sortedMeetings.length > 0 ? (
     <Appear from="down" delay={500} duration={500} key={`sched-${focusKey}`}>
-      <Section title="Weekly Schedule" open={scheduleOpen} onToggle={() => setScheduleOpen((v) => !v)}>
-        <Text className={`text-sm leading-5 ${t.textSecondary}`}>
-          Monday & Wednesday: 2:00 PM – 3:30 PM (Lectures){"\n"}
-          Friday: 1:00 PM – 3:00 PM (Lab Sessions)
-        </Text>
-      </Section>
+      <Card variant="surface" className="mb-4">
+        <Text className={`text-base font-bold mb-2 ${t.text}`}>Weekly Schedule</Text>
+        {sortedMeetings.map((m, i) => (
+          <View key={i} className="flex-row items-center py-1.5">
+            <Text className={`text-sm font-semibold w-24 ${t.text}`}>{m.day}</Text>
+            <Text className={`text-sm flex-1 ${t.textSecondary}`}>
+              {formatTime12h(m.start)} – {formatTime12h(m.end)}
+              {m.location ? ` · ${m.location}` : ""}
+            </Text>
+            <Text className={`text-xs ${t.textMuted}`} style={{ textTransform: "capitalize" }}>
+              {m.type.replace("-", " ")}
+            </Text>
+          </View>
+        ))}
+      </Card>
     </Appear>
-  );
+  ) : null;
 
-  const GradingCard = (
+  const GradingCard = (course.gradingScale && course.gradingScale.length > 0) ? (
     <Appear from="down" delay={600} duration={500} key={`grading-${focusKey}`}>
-      <Section title="Grading Policy" open={gradingOpen} onToggle={() => setGradingOpen((v) => !v)}>
-        <Text className={`text-sm leading-5 ${t.textSecondary}`}>
-          Letter grades based on total points. A: 90–100%, B: 80–89%, C: 70–79%, D: 60–69%, F:
-          below 60%.
-        </Text>
-      </Section>
+      <Card variant="surface" className="mb-4">
+        <Text className={`text-base font-bold mb-2 ${t.text}`}>Grading Scale</Text>
+        <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+          {course.gradingScale.map((g, i) => (
+            <View
+              key={i}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 8,
+                backgroundColor: mode === "dark" ? "rgba(255,255,255,0.04)" : "#F1F5F9",
+                minWidth: 68,
+              }}
+            >
+              <Text className={`text-xs font-bold ${t.text}`}>{g.letter}</Text>
+              <Text className={`text-[10px] ${t.textMuted}`}>≥ {g.minPercent}%</Text>
+            </View>
+          ))}
+        </View>
+      </Card>
     </Appear>
-  );
+  ) : null;
 
   const KeyDeadlinesCard = (
     <Appear from="down" delay={isWide ? 100 : 700} duration={500} key={`deadlines-${focusKey}`}>
@@ -171,7 +291,7 @@ export default function CourseDetailScreen({ route, navigation }: Props) {
           <Text className={`ml-2 text-base font-bold ${t.text}`}>Key Deadlines</Text>
         </View>
         {course.deadlines.map((d) => {
-          const dt = new Date(d.dueDate);
+          const dt = parseIsoLocal(d.dueDate);
           const month = dt.toLocaleString("en-US", { month: "short" });
           const day = String(dt.getDate());
           return (
@@ -234,6 +354,31 @@ export default function CourseDetailScreen({ route, navigation }: Props) {
     </Appear>
   );
 
+  const DeleteCourseCard = (
+    <Appear from="down" delay={isWide ? 400 : 1000} duration={500} key={`delete-${focusKey}`}>
+      <Pressable
+        onPress={handleDelete}
+        disabled={deleting}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingVertical: 14,
+          borderRadius: 14,
+          borderWidth: 1.5,
+          borderColor: "#E25C5C",
+          marginBottom: 16,
+          opacity: deleting ? 0.6 : 1,
+        }}
+      >
+        <Trash2 size={16} color="#E25C5C" />
+        <Text style={{ color: "#E25C5C", fontWeight: "600", marginLeft: 8, fontSize: 14 }}>
+          {deleting ? "Deleting..." : "Delete Course"}
+        </Text>
+      </Pressable>
+    </Appear>
+  );
+
   return (
     <SafeAreaView className={`flex-1 ${t.bg}`} edges={["bottom"]}>
       <HeaderBand
@@ -264,7 +409,7 @@ export default function CourseDetailScreen({ route, navigation }: Props) {
                 {GradeWeightCard}
                 {WeeklyHourCard}
                 {AISummaryCard}
-                {DescriptionCard}
+                {CourseInfoCard}
                 {ScheduleCard}
                 {GradingCard}
               </View>
@@ -272,6 +417,7 @@ export default function CourseDetailScreen({ route, navigation }: Props) {
                 {KeyDeadlinesCard}
                 {SkillsCard}
                 {TimeInvestmentCard}
+                {DeleteCourseCard}
               </View>
             </View>
           ) : (
@@ -279,12 +425,13 @@ export default function CourseDetailScreen({ route, navigation }: Props) {
               {GradeWeightCard}
               {WeeklyHourCard}
               {AISummaryCard}
-              {DescriptionCard}
+              {CourseInfoCard}
               {ScheduleCard}
               {GradingCard}
               {KeyDeadlinesCard}
               {SkillsCard}
               {TimeInvestmentCard}
+                {DeleteCourseCard}
             </>
           )}
         </View>
